@@ -1,0 +1,27 @@
+{
+  "name": "guinmotion",
+  "version-string": "0.1.0",
+  "description": "Cross-platform robot motion-control algorithm development and visualization workbench.",
+  "dependencies": [],
+  "features": {
+    "qt": {
+      "description": "Enable Qt 6 Widgets desktop UI dependencies.",
+      "dependencies": [
+        {
+          "name": "qtbase",
+          "default-features": false,
+          "features": ["widgets"],
+          "platform": "!windows"
+        }
+      ]
+    },
+    "python": {
+      "description": "Enable embedded Python operator runtime dependencies.",
+      "dependencies": ["pybind11"]
+    },
+    "pointcloud": {
+      "description": "Enable optional point-cloud processing dependencies.",
+      "dependencies": []
+    }
+  }
+}

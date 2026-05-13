@@ -1,0 +1,11 @@
+{
+  "id": "guinmotion.example.minimal",
+  "name": "Minimal Example Operator",
+  "version": "0.1.0",
+  "type": "cpp",
+  "entry": "minimal_operator",
+  "sdkAbi": 1,
+  "operators": [
+    "guinmotion.example.minimal.echo"
+  ]
+}

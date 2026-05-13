@@ -1,0 +1,74 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default (Qt GUI)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GUINMOTION_BUILD_EXAMPLES": "ON",
+        "GUINMOTION_ENABLE_QT": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release (Qt GUI)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "GUINMOTION_BUILD_EXAMPLES": "ON",
+        "GUINMOTION_ENABLE_QT": "ON"
+      }
+    },
+    {
+      "name": "qt-release",
+      "displayName": "Qt Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/qt-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "GUINMOTION_ENABLE_QT": "ON",
+        "GUINMOTION_BUILD_EXAMPLES": "ON"
+      }
+    },
+    {
+      "name": "headless",
+      "displayName": "Headless (no Qt)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/headless",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GUINMOTION_BUILD_EXAMPLES": "ON",
+        "GUINMOTION_ENABLE_QT": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "qt-release",
+      "configurePreset": "qt-release"
+    },
+    {
+      "name": "headless",
+      "configurePreset": "headless"
+    }
+  ],
+  "packagePresets": [
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "generators": ["TGZ"]
+    }
+  ]
+}
