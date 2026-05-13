@@ -13,7 +13,7 @@ int get_plugin_metadata(GuinMotionPluginMetadata* out_metadata) {
     return -1;
   }
   out_metadata->id = view("guinmotion.example.minimal");
-  out_metadata->name = view("Minimal Example Operator");
+  out_metadata->name = view("最小化示例算子");
   out_metadata->version = view("0.1.0");
   out_metadata->sdk_abi_version = GUINMOTION_SDK_ABI_VERSION;
   return 0;
@@ -28,9 +28,9 @@ int get_operator_metadata(uint64_t index, GuinMotionOperatorMetadata* out_metada
     return -1;
   }
   out_metadata->id = view("guinmotion.example.minimal.echo");
-  out_metadata->name = view("Minimal Echo");
+  out_metadata->name = view("最小化回显");
   out_metadata->version = view("0.1.0");
-  out_metadata->description = view("Example plugin used to verify C ABI loading.");
+  out_metadata->description = view("用于验证 C ABI 动态加载的示例插件。");
   return 0;
 }
 

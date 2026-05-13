@@ -45,14 +45,14 @@ ProjectSummary Project::summary() const {
 }
 
 Project make_demo_project() {
-  Project project{"demo", "GuinMotion Demo Project"};
+  Project project{"demo", "GuinMotion 演示项目"};
 
   RobotModel robot;
   robot.id = "demo_robot";
-  robot.name = "Demo 6-DOF Robot";
+  robot.name = "演示六轴机器人";
   for (int i = 0; i < 6; ++i) {
     Joint joint;
-    joint.name = "joint_" + std::to_string(i + 1);
+    joint.name = "关节" + std::to_string(i + 1);
     joint.limit.lower = -3.141592653589793;
     joint.limit.upper = 3.141592653589793;
     joint.limit.velocity = 1.0;
@@ -62,12 +62,12 @@ Project make_demo_project() {
 
   Trajectory trajectory;
   trajectory.id = "demo_trajectory";
-  trajectory.name = "Demo Joint Trajectory";
+  trajectory.name = "演示关节轨迹";
   trajectory.robot_model_id = "demo_robot";
   for (int i = 0; i < 3; ++i) {
     Waypoint waypoint;
     waypoint.id = "waypoint_" + std::to_string(i + 1);
-    waypoint.label = "Waypoint " + std::to_string(i + 1);
+    waypoint.label = "路点 " + std::to_string(i + 1);
     waypoint.state.robot_model_id = "demo_robot";
     waypoint.state.joint_positions_radians = {
         0.1 * i, 0.2 * i, 0.3 * i, 0.1 * i, -0.2 * i, -0.1 * i};
@@ -78,7 +78,7 @@ Project make_demo_project() {
 
   PointCloud cloud;
   cloud.id = "demo_cloud";
-  cloud.name = "Demo Point Cloud";
+  cloud.name = "演示点云";
   cloud.positions = {{0.0, 0.0, 0.0}, {0.1, 0.0, 0.0}, {0.0, 0.1, 0.0}};
   project.scene().point_clouds.push_back(cloud);
 

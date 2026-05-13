@@ -157,7 +157,7 @@ void ViewportWidget::ensure_program() {
   program_.addCacheableShaderFromSourceCode(QOpenGLShader::Vertex, kVs);
   program_.addCacheableShaderFromSourceCode(QOpenGLShader::Fragment, kFs);
   if (!program_.link()) {
-    qWarning("GuinMotion ViewportWidget: shader program failed to link: %s", qPrintable(program_.log()));
+    qWarning("GuinMotion ViewportWidget：着色器程序链接失败：%s", qPrintable(program_.log()));
   }
 }
 

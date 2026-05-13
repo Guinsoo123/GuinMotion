@@ -77,18 +77,18 @@ core::io::ImportResult ProjectService::import_trajectory_xml(std::string_view xm
 core::io::ImportResult ProjectService::import_trajectory_xml_file(const std::filesystem::path& path) {
   if (!std::filesystem::exists(path)) {
     core::io::ImportResult r;
-    r.message = "Trajectory file does not exist: " + path.string();
+    r.message = "轨迹文件不存在：" + path.string();
     return r;
   }
   const std::string text = read_text_file(path);
   if (text.empty()) {
     core::io::ImportResult r;
-    r.message = "Trajectory file is empty or could not be read: " + path.string();
+    r.message = "轨迹文件为空或无法读取：" + path.string();
     return r;
   }
   auto r = import_trajectory_xml(text);
   if (r.ok) {
-    r.message = "Imported trajectory from " + path.string();
+    r.message = "已从文件导入轨迹：" + path.string();
   }
   return r;
 }

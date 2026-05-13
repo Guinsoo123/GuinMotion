@@ -162,7 +162,7 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
   ImportResult result;
   const auto root_open = extract_tag_open(xml, "guinmotion_trajectory", 0);
   if (root_open.empty()) {
-    result.message = "Missing <guinmotion_trajectory> root element.";
+    result.message = "缺少根元素 <guinmotion_trajectory>。";
     return result;
   }
 
@@ -170,7 +170,7 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
   if (auto v = attribute_value(root_open, "id")) {
     trajectory.id = std::string(*v);
   } else {
-    result.message = "Trajectory attribute 'id' is required.";
+    result.message = "轨迹缺少必需属性 id。";
     return result;
   }
   if (auto v = attribute_value(root_open, "name")) {
@@ -181,7 +181,7 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
   if (auto v = attribute_value(root_open, "robot_model_id")) {
     trajectory.robot_model_id = std::string(*v);
   } else {
-    result.message = "Trajectory attribute 'robot_model_id' is required.";
+    result.message = "轨迹缺少必需属性 robot_model_id。";
     return result;
   }
   if (auto v = attribute_value(root_open, "interpolation")) {
@@ -191,14 +191,14 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
   if (ctx.scene != nullptr) {
     const auto jc = find_robot_joint_count(*ctx.scene, trajectory.robot_model_id);
     if (!jc) {
-      result.message = "robot_model_id '" + trajectory.robot_model_id + "' not found in scene.";
+      result.message = "场景中不存在 robot_model_id「" + trajectory.robot_model_id + "」对应的机器人模型。";
       return result;
     }
   }
 
   const auto root_close_pos = xml.find("</guinmotion_trajectory>");
   if (root_close_pos == std::string_view::npos) {
-    result.message = "Missing </guinmotion_trajectory> closing tag.";
+    result.message = "缺少闭合标签 </guinmotion_trajectory>。";
     return result;
   }
   const std::size_t body_begin = root_open.data() - xml.data() + root_open.size();
@@ -222,7 +222,7 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
     if (auto v = attribute_value(w_open, "id")) {
       wp.id = std::string(*v);
     } else {
-      result.message = "Each <waypoint> requires an 'id' attribute.";
+      result.message = "每个 <waypoint> 都需要 id 属性。";
       return result;
     }
     if (auto v = attribute_value(w_open, "label")) {
@@ -231,12 +231,12 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
     if (auto v = attribute_value(w_open, "time_seconds")) {
       double t = 0.0;
       if (!parse_double_token(*v, t)) {
-        result.message = "Invalid time_seconds on waypoint '" + wp.id + "'.";
+        result.message = "路点「" + wp.id + "」的 time_seconds 无效。";
         return result;
       }
       wp.time_seconds = t;
       if (t < last_time - 1e-9) {
-        result.message = "time_seconds must be non-decreasing (waypoint '" + wp.id + "').";
+        result.message = "time_seconds 必须非递减（路点「" + wp.id + "」）。";
         return result;
       }
       last_time = t;
@@ -244,11 +244,11 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
     if (auto v = attribute_value(w_open, "duration_seconds")) {
       double d = 0.0;
       if (!parse_double_token(*v, d)) {
-        result.message = "Invalid duration_seconds on waypoint '" + wp.id + "'.";
+        result.message = "路点「" + wp.id + "」的 duration_seconds 无效。";
         return result;
       }
       if (d < 0.0) {
-        result.message = "duration_seconds must be non-negative (waypoint '" + wp.id + "').";
+        result.message = "duration_seconds 必须非负（路点「" + wp.id + "」）。";
         return result;
       }
       wp.duration_seconds = d;
@@ -257,18 +257,17 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
     const std::size_t inner_from = w_open.data() - body.data() + w_open.size();
     const auto joints_inner = extract_inner(body, "<joints>", "</joints>", inner_from);
     if (!joints_inner) {
-      result.message = "Missing <joints> for waypoint '" + wp.id + "'.";
+      result.message = "路点「" + wp.id + "」缺少 <joints>。";
       return result;
     }
     auto joints = parse_joint_list(*joints_inner);
     if (joints.empty()) {
-      result.message = "Waypoint '" + wp.id + "' has empty or invalid <joints> list.";
+      result.message = "路点「" + wp.id + "」的 <joints> 为空或无法解析。";
       return result;
     }
     if (expected_joints && joints.size() != *expected_joints) {
-      result.message = "Waypoint '" + wp.id + "' joint count " + std::to_string(joints.size()) +
-                     " does not match robot model '" + trajectory.robot_model_id + "' (" +
-                     std::to_string(*expected_joints) + " joints).";
+      result.message = "路点「" + wp.id + "」关节数 " + std::to_string(joints.size()) + " 与机器人模型「" +
+                       trajectory.robot_model_id + "」不符（期望 " + std::to_string(*expected_joints) + "）。";
       return result;
     }
 
@@ -277,7 +276,7 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
 
     const auto w_close = body.find("</waypoint>", inner_from);
     if (w_close == std::string_view::npos) {
-      result.message = "Missing </waypoint> after '" + wp.id + "'.";
+      result.message = "路点「" + wp.id + "」后缺少 </waypoint>。";
       return result;
     }
     search = w_close + std::string_view("</waypoint>").size();
@@ -286,12 +285,12 @@ ImportResult import_trajectory_xml(std::string_view xml, const TrajectoryXmlImpo
   }
 
   if (trajectory.waypoints.empty()) {
-    result.message = "Trajectory contains no waypoints.";
+    result.message = "轨迹中没有任何路点。";
     return result;
   }
 
   result.ok = true;
-  result.message = "OK";
+  result.message = "成功";
   result.trajectory = std::move(trajectory);
   return result;
 }

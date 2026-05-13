@@ -36,25 +36,25 @@ void run_embedded_python_smoke(std::ostream& out,
                                const std::optional<std::filesystem::path>& script_path) {
   py::scoped_interpreter guard{};
   (void)py::module_::import("guinmotion_sdk");
-  out << "[python_embed] interpreter started; imported guinmotion_sdk\n";
+  out << "[python_embed] 解释器已启动；已导入 guinmotion_sdk\n";
 
   const auto resolved = resolve_script_path(script_path);
   if (!resolved.has_value() || resolved->empty()) {
-    out << "[python_embed] no script path configured (optional)\n";
+    out << "[python_embed] 未配置脚本路径（可选）\n";
     return;
   }
 
   std::error_code ec;
   if (!std::filesystem::exists(*resolved, ec)) {
-    out << "[python_embed] script path does not exist: " << resolved->string() << '\n';
+    out << "[python_embed] 脚本路径不存在：" << resolved->string() << '\n';
     return;
   }
 
   try {
     py::eval_file(resolved->string(), py::globals());
-    out << "[python_embed] eval_file ok: " << resolved->string() << '\n';
+    out << "[python_embed] eval_file 成功：" << resolved->string() << '\n';
   } catch (const py::error_already_set& e) {
-    out << "[python_embed] eval_file failed: " << e.what() << '\n';
+    out << "[python_embed] eval_file 失败：" << e.what() << '\n';
   }
 }
 

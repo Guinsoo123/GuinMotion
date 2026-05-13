@@ -53,7 +53,7 @@ namespace {
   std::istringstream in{std::string(data)};
   std::string line;
   if (!std::getline(in, line) || !starts_with(trim(line), "ply")) {
-    return fail("PLY: missing 'ply' magic.");
+    return fail("PLY：缺少文件头 ply。");
   }
   bool format_ascii = false;
   std::optional<std::size_t> vertex_count;
@@ -66,7 +66,7 @@ namespace {
       if (t.find("ascii") != std::string::npos) {
         format_ascii = true;
       } else if (t.find("binary") != std::string::npos) {
-        return fail("PLY binary format is not supported in this milestone (use ASCII PLY).");
+        return fail("PLY：暂不支持二进制格式（请使用 ASCII PLY）。");
       }
     }
     if (starts_with_ci(t, "element vertex")) {
@@ -75,44 +75,44 @@ namespace {
       std::string vert;
       std::size_t n = 0;
       if (!(ls >> el >> vert >> n)) {
-        return fail("PLY: invalid element vertex line.");
+        return fail("PLY：element vertex 行无效。");
       }
       vertex_count = n;
     }
   }
   if (!format_ascii) {
-    return fail("PLY: only ASCII format 1.0 is supported.");
+    return fail("PLY：仅支持 ASCII 格式 1.0。");
   }
   if (!vertex_count || *vertex_count == 0) {
-    return fail("PLY: missing or zero vertex count.");
+    return fail("PLY：缺少顶点数量或顶点数为 0。");
   }
   if (*vertex_count > limits.max_point_cloud_vertices) {
-    return fail("PLY: vertex count exceeds ImportLimits::max_point_cloud_vertices.");
+    return fail("PLY：顶点数超过导入上限 max_point_cloud_vertices。");
   }
 
   PointCloud cloud;
   cloud.id = "imported_cloud";
-  cloud.name = "Imported Point Cloud";
+  cloud.name = "导入的点云";
   cloud.metadata.push_back({"source", "ply_ascii"});
   cloud.positions.reserve(*vertex_count);
 
   for (std::size_t i = 0; i < *vertex_count; ++i) {
     if (!std::getline(in, line)) {
-      return fail("PLY: unexpected EOF in vertex data.");
+      return fail("PLY：顶点数据意外结束。");
     }
     std::istringstream ls{std::string(trim(line))};
     double x = 0.0;
     double y = 0.0;
     double z = 0.0;
     if (!(ls >> x >> y >> z)) {
-      return fail("PLY: invalid vertex line (expected at least x y z).");
+      return fail("PLY：顶点行无效（至少需要 x y z）。");
     }
     cloud.positions.push_back(Vec3{x, y, z});
   }
 
   ImportResult okr;
   okr.ok = true;
-  okr.message = "OK";
+  okr.message = "成功";
   okr.point_cloud = std::move(cloud);
   return okr;
 }
@@ -120,7 +120,7 @@ namespace {
 [[nodiscard]] ImportResult import_xyz_text(std::string_view data, const ImportLimits& limits) {
   PointCloud cloud;
   cloud.id = "imported_cloud";
-  cloud.name = "Imported Point Cloud";
+  cloud.name = "导入的点云";
   cloud.metadata.push_back({"source", "xyz_text"});
 
   std::istringstream in{std::string(data)};
@@ -135,19 +135,19 @@ namespace {
     double y = 0.0;
     double z = 0.0;
     if (!(ls >> x >> y >> z)) {
-      return fail("XYZ: expected three floating-point values per line.");
+      return fail("XYZ：每行需要三个浮点数（x y z）。");
     }
     cloud.positions.push_back(Vec3{x, y, z});
     if (cloud.positions.size() > limits.max_point_cloud_vertices) {
-      return fail("XYZ: vertex count exceeds ImportLimits::max_point_cloud_vertices.");
+      return fail("XYZ：顶点数超过导入上限 max_point_cloud_vertices。");
     }
   }
   if (cloud.positions.empty()) {
-    return fail("XYZ: no points found.");
+    return fail("XYZ：未读取到任何点。");
   }
   ImportResult okr;
   okr.ok = true;
-  okr.message = "OK";
+  okr.message = "成功";
   okr.point_cloud = std::move(cloud);
   return okr;
 }
@@ -157,7 +157,7 @@ namespace {
 ImportResult import_point_cloud_file(const std::filesystem::path& path, const ImportLimits& limits) {
   std::ifstream f(path, std::ios::binary);
   if (!f) {
-    return fail("Cannot open file: " + path.string());
+    return fail("无法打开文件：" + path.string());
   }
   const std::string data = read_all_stream(f);
   const auto ext = path.extension().string();

@@ -32,7 +32,7 @@ bool OperatorRegistry::empty() const noexcept {
 PluginMetadata builtin_plugin_metadata() {
   return PluginMetadata{
       .id = "guinmotion.builtin",
-      .name = "GuinMotion Built-in Operators",
+      .name = "GuinMotion 内置算子",
       .version = "0.1.0",
       .sdk_abi_version = 1U,
   };

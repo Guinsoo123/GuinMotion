@@ -43,17 +43,17 @@ void register_builtin_operators_impl(operator_runtime::OperatorRegistry& registr
       plugin,
       operator_runtime::OperatorMetadata{
           .id = "guinmotion.trajectory.duration_check",
-          .name = "Trajectory Duration Check",
+          .name = "轨迹时长检查",
           .version = "0.1.0",
-          .description = "Validate waypoint durations and time ordering.",
+          .description = "校验路点 duration_seconds 与 time_seconds 的合理性。",
       });
   registry.register_operator(
       plugin,
       operator_runtime::OperatorMetadata{
           .id = "guinmotion.joint.limit_check",
-          .name = "Joint Limit Check",
+          .name = "关节限位检查",
           .version = "0.1.0",
-          .description = "Validate joint positions against robot model limits.",
+          .description = "根据机器人模型关节上下限校验关节角（弧度）。",
       });
 }
 
@@ -62,24 +62,24 @@ void register_builtin_operators_impl(operator_runtime::OperatorRegistry& registr
   QString prefix;
   switch (message.status) {
     case ValidationStatus::Error:
-      prefix = QStringLiteral("[Error] ");
+      prefix = QStringLiteral("[错误] ");
       break;
     case ValidationStatus::Warning:
-      prefix = QStringLiteral("[Warning] ");
+      prefix = QStringLiteral("[警告] ");
       break;
     case ValidationStatus::Valid:
-      prefix = QStringLiteral("[Valid] ");
+      prefix = QStringLiteral("[通过] ");
       break;
     case ValidationStatus::Skipped:
-      prefix = QStringLiteral("[Skipped] ");
+      prefix = QStringLiteral("[跳过] ");
       break;
     default:
-      prefix = QStringLiteral("[Info] ");
+      prefix = QStringLiteral("[信息] ");
       break;
   }
   QString suffix;
   if (!message.related_object_id.empty()) {
-    suffix = QStringLiteral(" @%1").arg(QString::fromStdString(message.related_object_id));
+    suffix = QStringLiteral("（关联：%1）").arg(QString::fromStdString(message.related_object_id));
   }
   return prefix + QString::fromStdString(message.message) + suffix;
 }
@@ -87,7 +87,7 @@ void register_builtin_operators_impl(operator_runtime::OperatorRegistry& registr
 }  // namespace
 
 MainWindow::MainWindow() : service_(core::make_demo_project()) {
-  setWindowTitle("GuinMotion");
+  setWindowTitle(QStringLiteral("GuinMotion 工作台"));
   resize(1280, 720);
 
   register_builtin_operators();
@@ -104,14 +104,14 @@ MainWindow::MainWindow() : service_(core::make_demo_project()) {
   tree_view_->header()->hide();
   tree_view_->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-  auto* project_dock = new QDockWidget("Project", this);
+  auto* project_dock = new QDockWidget(QStringLiteral("项目"), this);
   project_dock->setWidget(tree_view_);
   addDockWidget(Qt::LeftDockWidgetArea, project_dock);
 
-  properties_label_ = new QLabel("Select an item in the project tree.");
+  properties_label_ = new QLabel(QStringLiteral("请在项目树中选择一项。"));
   properties_label_->setWordWrap(true);
   properties_label_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-  auto* prop_dock = new QDockWidget("Properties", this);
+  auto* prop_dock = new QDockWidget(QStringLiteral("属性"), this);
   prop_dock->setWidget(properties_label_);
   addDockWidget(Qt::RightDockWidgetArea, prop_dock);
 
@@ -119,9 +119,9 @@ MainWindow::MainWindow() : service_(core::make_demo_project()) {
   auto* op_panel = new QWidget(this);
   auto* op_layout = new QVBoxLayout(op_panel);
   op_layout->addWidget(operator_list_, 1);
-  run_operator_button_ = new QPushButton(QStringLiteral("Run on selected trajectory"), op_panel);
+  run_operator_button_ = new QPushButton(QStringLiteral("对所选轨迹运行算子"), op_panel);
   op_layout->addWidget(run_operator_button_);
-  auto* op_dock = new QDockWidget("Operators", this);
+  auto* op_dock = new QDockWidget(QStringLiteral("算子"), this);
   op_dock->setWidget(op_panel);
   addDockWidget(Qt::BottomDockWidgetArea, op_dock);
 
@@ -129,11 +129,11 @@ MainWindow::MainWindow() : service_(core::make_demo_project()) {
 
   load_external_plugins();
 
-  auto* file_menu = menuBar()->addMenu("&File");
-  auto* import_traj = new QAction("Import Trajectory &XML…", this);
+  auto* file_menu = menuBar()->addMenu(QStringLiteral("文件(&F)"));
+  auto* import_traj = new QAction(QStringLiteral("导入轨迹 XML(&X)…"), this);
   connect(import_traj, &QAction::triggered, this, &MainWindow::import_trajectory_xml);
   file_menu->addAction(import_traj);
-  auto* import_cloud = new QAction("Import Point &Cloud…", this);
+  auto* import_cloud = new QAction(QStringLiteral("导入点云(&C)…"), this);
   connect(import_cloud, &QAction::triggered, this, &MainWindow::import_point_cloud);
   file_menu->addAction(import_cloud);
 
@@ -150,7 +150,7 @@ MainWindow::MainWindow() : service_(core::make_demo_project()) {
 
   rebuild_scene_tree();
   statusBar()->showMessage(
-      QStringLiteral("Scene revision: %1").arg(service_.project().scene_revision()));
+      QStringLiteral("场景版本：%1").arg(service_.project().scene_revision()));
 }
 
 void MainWindow::register_builtin_operators() {
@@ -189,7 +189,7 @@ void MainWindow::load_external_plugins() {
     const std::filesystem::path dir(env);
     std::error_code ec;
     if (!std::filesystem::is_directory(dir, ec)) {
-      errors.push_back(std::string("GUINMOTION_PLUGIN_DIR is not a directory: ") + env);
+      errors.push_back(std::string("环境变量 GUINMOTION_PLUGIN_DIR 不是目录：") + env);
     } else {
       (void)enqueue_plugin_dir(dir);
     }
@@ -229,7 +229,7 @@ void MainWindow::rebuild_scene_tree() {
   tree_model_->clear();
   const auto& scene = service_.project().scene();
 
-  auto* robots = new QStandardItem("Robots");
+  auto* robots = new QStandardItem(QStringLiteral("机器人"));
   robots->setEditable(false);
   for (const auto& r : scene.robot_models) {
     auto* row = new QStandardItem(QString::fromStdString(r.id + " — " + r.name));
@@ -238,21 +238,21 @@ void MainWindow::rebuild_scene_tree() {
   }
   tree_model_->appendRow(robots);
 
-  auto* clouds = new QStandardItem("Point Clouds");
+  auto* clouds = new QStandardItem(QStringLiteral("点云"));
   clouds->setEditable(false);
   for (const auto& c : scene.point_clouds) {
-    auto* row = new QStandardItem(QString::fromStdString(c.id + " — " + c.name + " (" +
-                                                          std::to_string(c.positions.size()) + " pts)"));
+    auto* row = new QStandardItem(QString::fromStdString(c.id + " — " + c.name + "（" +
+                                                          std::to_string(c.positions.size()) + " 点）"));
     row->setEditable(false);
     clouds->appendRow(row);
   }
   tree_model_->appendRow(clouds);
 
-  auto* trajs = new QStandardItem("Trajectories");
+  auto* trajs = new QStandardItem(QStringLiteral("轨迹"));
   trajs->setEditable(false);
   for (const auto& t : scene.trajectories) {
-    auto* row = new QStandardItem(QString::fromStdString(t.id + " — " + t.name + " (" +
-                                                         std::to_string(t.waypoints.size()) + " wp)"));
+    auto* row = new QStandardItem(QString::fromStdString(t.id + " — " + t.name + "（" +
+                                                         std::to_string(t.waypoints.size()) + " 路点）"));
     row->setEditable(false);
     row->setData(QStringLiteral("trajectory"), kTreeKindRole);
     row->setData(QString::fromStdString(t.id), kTreeIdRole);
@@ -260,10 +260,10 @@ void MainWindow::rebuild_scene_tree() {
   }
   tree_model_->appendRow(trajs);
 
-  auto* val = new QStandardItem("Validation");
+  auto* val = new QStandardItem(QStringLiteral("校验"));
   val->setEditable(false);
   if (scene.validation_messages.empty()) {
-    auto* row = new QStandardItem("(no messages)");
+    auto* row = new QStandardItem(QStringLiteral("（无消息）"));
     row->setEditable(false);
     val->appendRow(row);
   } else {
@@ -284,38 +284,42 @@ void MainWindow::update_properties_panel(const QString& text) {
 }
 
 void MainWindow::import_trajectory_xml() {
-  const QString path = QFileDialog::getOpenFileName(this, "Import Trajectory XML", {}, "XML (*.xml)");
+  const QString path = QFileDialog::getOpenFileName(
+      this, QStringLiteral("导入轨迹 XML"), {}, QStringLiteral("XML 文件 (*.xml)"));
   if (path.isEmpty()) {
     return;
   }
   const auto result = service_.import_trajectory_xml_file(path.toStdString());
   if (!result.ok) {
     statusBar()->showMessage(QString::fromStdString(result.message), 8000);
-    QMessageBox::warning(this, "Import failed", QString::fromStdString(result.message));
+    QMessageBox::warning(this, QStringLiteral("导入失败"), QString::fromStdString(result.message));
     return;
   }
   rebuild_scene_tree();
   statusBar()->showMessage(
       QString::fromStdString(result.message) +
-          QStringLiteral(" | revision: %1").arg(service_.project().scene_revision()),
+          QStringLiteral(" | 场景版本：%1").arg(service_.project().scene_revision()),
       8000);
 }
 
 void MainWindow::import_point_cloud() {
   const QString path = QFileDialog::getOpenFileName(
-      this, "Import Point Cloud", {}, "Point cloud (*.ply *.xyz);;All files (*)");
+      this,
+      QStringLiteral("导入点云"),
+      {},
+      QStringLiteral("点云 (*.ply *.xyz);;所有文件 (*)"));
   if (path.isEmpty()) {
     return;
   }
   const auto result = service_.import_point_cloud_file(path.toStdString());
   if (!result.ok) {
     statusBar()->showMessage(QString::fromStdString(result.message), 8000);
-    QMessageBox::warning(this, "Import failed", QString::fromStdString(result.message));
+    QMessageBox::warning(this, QStringLiteral("导入失败"), QString::fromStdString(result.message));
     return;
   }
   rebuild_scene_tree();
   statusBar()->showMessage(
-      QStringLiteral("Imported point cloud | revision: %1")
+      QStringLiteral("已导入点云 | 场景版本：%1")
           .arg(service_.project().scene_revision()),
       8000);
 }
@@ -347,32 +351,32 @@ std::string MainWindow::trajectory_id_for_operator_run() const {
 void MainWindow::run_selected_operator() {
   QListWidgetItem* item = operator_list_->currentItem();
   if (item == nullptr) {
-    QMessageBox::information(this, QStringLiteral("Operators"),
-                             QStringLiteral("Select an operator in the list."));
+    QMessageBox::information(this, QStringLiteral("算子"),
+                             QStringLiteral("请先在列表中选择一个算子。"));
     return;
   }
   const QString op_id = item->data(Qt::UserRole).toString();
   if (op_id.isEmpty()) {
-    QMessageBox::warning(this, QStringLiteral("Operators"),
-                         QStringLiteral("Could not resolve operator id."));
+    QMessageBox::warning(this, QStringLiteral("算子"),
+                         QStringLiteral("无法解析算子 ID。"));
     return;
   }
   std::unique_ptr<sdk::Operator> op = sdk::make_builtin_operator(op_id.toStdString());
   if (op == nullptr) {
     statusBar()->showMessage(
-        QStringLiteral("Operator \"%1\" is not a built-in (plugin execution is not wired yet).").arg(op_id),
+        QStringLiteral("算子「%1」不是内置实现（插件执行尚未接入）。").arg(op_id),
         8000);
     return;
   }
   const std::string trajectory_id = trajectory_id_for_operator_run();
   if (trajectory_id.empty()) {
-    QMessageBox::information(this, QStringLiteral("Operators"),
-                             QStringLiteral("Add a trajectory before running validation operators."));
+    QMessageBox::information(this, QStringLiteral("算子"),
+                             QStringLiteral("请先添加或导入一条轨迹，再运行校验类算子。"));
     return;
   }
   (void)service_.run_operator(*op, trajectory_id);
   rebuild_scene_tree();
-  statusBar()->showMessage(QStringLiteral("Ran operator %1 on trajectory %2 | revision %3")
+  statusBar()->showMessage(QStringLiteral("已在轨迹 %2 上运行算子 %1 | 场景版本 %3")
                                .arg(op_id)
                                .arg(QString::fromStdString(trajectory_id))
                                .arg(service_.project().scene_revision()),

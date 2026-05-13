@@ -48,9 +48,9 @@ class TrajectoryDurationCheckOperator final : public Operator {
   [[nodiscard]] OperatorMetadata metadata() const override {
     return OperatorMetadata{
         .id = kDurationOpId,
-        .name = "Trajectory Duration Check",
+        .name = "轨迹时长检查",
         .version = "0.1.0",
-        .description = "Validate waypoint duration_seconds and time_seconds monotonicity.",
+        .description = "校验路点 duration_seconds 与 time_seconds 单调性。",
     };
   }
 
@@ -62,9 +62,9 @@ class TrajectoryDurationCheckOperator final : public Operator {
     if (trajectory == nullptr) {
       const std::string tid = context.target_trajectory_id();
       std::ostringstream msg;
-      msg << "No trajectory to check";
+      msg << "没有可检查的轨迹";
       if (!tid.empty()) {
-        msg << " (id not found: " << tid << ")";
+        msg << "（未找到 id：" << tid << "）";
       }
       out.validation_messages.push_back(core::ValidationMessage{
           .status = core::ValidationStatus::Error,
@@ -82,14 +82,14 @@ class TrajectoryDurationCheckOperator final : public Operator {
         out.validation_messages.push_back(core::ValidationMessage{
             .status = core::ValidationStatus::Error,
             .source = kDurationOpId,
-            .message = "duration_seconds is not finite",
+            .message = "duration_seconds 不是有限数值",
             .related_object_id = wp.id,
         });
       } else if (d < 0.0) {
         out.validation_messages.push_back(core::ValidationMessage{
             .status = core::ValidationStatus::Error,
             .source = kDurationOpId,
-            .message = "duration_seconds is negative",
+            .message = "duration_seconds 为负",
             .related_object_id = wp.id,
         });
       }
@@ -99,14 +99,14 @@ class TrajectoryDurationCheckOperator final : public Operator {
         out.validation_messages.push_back(core::ValidationMessage{
             .status = core::ValidationStatus::Error,
             .source = kDurationOpId,
-            .message = "time_seconds is not finite",
+            .message = "time_seconds 不是有限数值",
             .related_object_id = wp.id,
         });
       } else if (t < previous_time) {
         out.validation_messages.push_back(core::ValidationMessage{
             .status = core::ValidationStatus::Warning,
             .source = kDurationOpId,
-            .message = "time_seconds decreased relative to previous waypoint",
+            .message = "time_seconds 相对上一路点变小（非单调）",
             .related_object_id = wp.id,
         });
       }
@@ -122,9 +122,9 @@ class JointLimitCheckOperator final : public Operator {
   [[nodiscard]] OperatorMetadata metadata() const override {
     return OperatorMetadata{
         .id = kJointLimitOpId,
-        .name = "Joint Limit Check",
+        .name = "关节限位检查",
         .version = "0.1.0",
-        .description = "Validate joint positions against RobotModel limits (radians for revolute).",
+        .description = "按 RobotModel 关节限位校验关节位置（转动关节为弧度）。",
     };
   }
 
@@ -136,9 +136,9 @@ class JointLimitCheckOperator final : public Operator {
     if (trajectory == nullptr) {
       const std::string tid = context.target_trajectory_id();
       std::ostringstream msg;
-      msg << "No trajectory to check";
+      msg << "没有可检查的轨迹";
       if (!tid.empty()) {
-        msg << " (id not found: " << tid << ")";
+        msg << "（未找到 id：" << tid << "）";
       }
       out.validation_messages.push_back(core::ValidationMessage{
           .status = core::ValidationStatus::Error,
@@ -154,7 +154,7 @@ class JointLimitCheckOperator final : public Operator {
       out.validation_messages.push_back(core::ValidationMessage{
           .status = core::ValidationStatus::Error,
           .source = kJointLimitOpId,
-          .message = "Robot model not found for trajectory.robot_model_id: " + trajectory->robot_model_id,
+          .message = "未找到轨迹 robot_model_id 对应的机器人模型：" + trajectory->robot_model_id,
           .related_object_id = trajectory->id,
       });
       return out;
@@ -167,8 +167,8 @@ class JointLimitCheckOperator final : public Operator {
         out.validation_messages.push_back(core::ValidationMessage{
             .status = core::ValidationStatus::Error,
             .source = kJointLimitOpId,
-            .message = "Joint count " + std::to_string(q.size()) + " does not match robot DOF " +
-                       std::to_string(dof),
+            .message = "关节数量 " + std::to_string(q.size()) + " 与机器人自由度 " + std::to_string(dof) +
+                       " 不一致",
             .related_object_id = wp.id,
         });
         continue;
@@ -179,7 +179,7 @@ class JointLimitCheckOperator final : public Operator {
           out.validation_messages.push_back(core::ValidationMessage{
               .status = core::ValidationStatus::Error,
               .source = kJointLimitOpId,
-              .message = "Joint " + std::to_string(j) + " position is not finite",
+              .message = "关节 " + std::to_string(j) + " 的位置不是有限数值",
               .related_object_id = wp.id,
           });
           continue;
@@ -189,8 +189,8 @@ class JointLimitCheckOperator final : public Operator {
           out.validation_messages.push_back(core::ValidationMessage{
               .status = core::ValidationStatus::Error,
               .source = kJointLimitOpId,
-              .message = "Joint " + robot->joints[j].name + " out of limits [" + std::to_string(lim.lower) +
-                         ", " + std::to_string(lim.upper) + "], value=" + std::to_string(v),
+              .message = "关节 " + robot->joints[j].name + " 超出限位 [" + std::to_string(lim.lower) + ", " +
+                         std::to_string(lim.upper) + "]，当前值=" + std::to_string(v),
               .related_object_id = wp.id,
           });
         }

@@ -12,7 +12,9 @@
 #ifdef GUINMOTION_ENABLE_QT
 #include "guinmotion/app/main_window.hpp"
 #include <QApplication>
+#include <QLibraryInfo>
 #include <QSurfaceFormat>
+#include <QTranslator>
 #endif
 
 #include <iostream>
@@ -26,17 +28,17 @@ void register_builtin_operators(guinmotion::operator_runtime::OperatorRegistry& 
       plugin,
       guinmotion::operator_runtime::OperatorMetadata{
           .id = "guinmotion.trajectory.duration_check",
-          .name = "Trajectory Duration Check",
+          .name = "轨迹时长检查",
           .version = "0.1.0",
-          .description = "Validate waypoint durations and time ordering.",
+          .description = "校验路点 duration_seconds 与 time_seconds 的合理性。",
       });
   registry.register_operator(
       plugin,
       guinmotion::operator_runtime::OperatorMetadata{
           .id = "guinmotion.joint.limit_check",
-          .name = "Joint Limit Check",
+          .name = "关节限位检查",
           .version = "0.1.0",
-          .description = "Validate joint positions against robot model limits.",
+          .description = "根据机器人模型关节上下限校验关节角（弧度）。",
       });
 }
 
@@ -46,7 +48,7 @@ std::string build_summary_text() {
   register_builtin_operators(registry);
 
   const char* kExtraTrajectory = R"(
-<guinmotion_trajectory id="t_import" name="Imported Sample" robot_model_id="demo_robot" interpolation="linear_joint">
+<guinmotion_trajectory id="t_import" name="导入样例" robot_model_id="demo_robot" interpolation="linear_joint">
   <waypoint id="wi1" duration_seconds="0.5" time_seconds="0">
     <joints>0 0 0 0 0 0</joints>
   </waypoint>
@@ -57,13 +59,13 @@ std::string build_summary_text() {
   const auto& project = service.project();
   const auto summary = project.summary();
   std::string text;
-  text += "GuinMotion " + project.name() + "\n";
-  text += "Scene revision: " + std::to_string(project.scene_revision()) + "\n";
-  text += "Robots: " + std::to_string(summary.robot_model_count) + "\n";
-  text += "Point clouds: " + std::to_string(summary.point_cloud_count) + "\n";
-  text += "Trajectories: " + std::to_string(summary.trajectory_count) + "\n";
-  text += "Waypoints: " + std::to_string(summary.waypoint_count) + "\n";
-  text += "Registered operators: " + std::to_string(registry.operators().size()) + "\n";
+  text += project.name() + "\n";
+  text += "场景版本：" + std::to_string(project.scene_revision()) + "\n";
+  text += "机器人：" + std::to_string(summary.robot_model_count) + "\n";
+  text += "点云：" + std::to_string(summary.point_cloud_count) + "\n";
+  text += "轨迹：" + std::to_string(summary.trajectory_count) + "\n";
+  text += "路点：" + std::to_string(summary.waypoint_count) + "\n";
+  text += "已注册算子：" + std::to_string(registry.operators().size()) + "\n";
   return text;
 }
 
@@ -93,6 +95,10 @@ int main(int argc, char** argv) {
   QSurfaceFormat::setDefaultFormat(format);
 
   QApplication app(argc, argv);
+  QTranslator qt_zh;
+  if (qt_zh.load("qtbase_zh_CN", QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
+    app.installTranslator(&qt_zh);
+  }
   guinmotion::app::MainWindow window;
   window.show();
   return app.exec();

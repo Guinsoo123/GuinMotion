@@ -58,12 +58,12 @@ std::string last_dynamic_loader_error() {
 #if defined(_WIN32)
   const DWORD code = GetLastError();
   if (code == 0) {
-    return "unknown error";
+    return "未知错误";
   }
-  return "Windows error " + std::to_string(code);
+  return "Windows 错误码 " + std::to_string(code);
 #else
   const char* message = dlerror();
-  return message != nullptr ? std::string(message) : std::string("unknown error");
+  return message != nullptr ? std::string(message) : std::string("未知错误");
 #endif
 }
 
@@ -99,7 +99,7 @@ bool DynamicPluginHost::load_plugin_file(const std::filesystem::path& path, Oper
 #endif
   void* handle = open_module(path);
   if (handle == nullptr) {
-    error_message = "failed to load library: " + last_dynamic_loader_error();
+    error_message = "加载动态库失败：" + last_dynamic_loader_error();
     return false;
   }
 
@@ -109,41 +109,41 @@ bool DynamicPluginHost::load_plugin_file(const std::filesystem::path& path, Oper
 
   GuinMotionGetPluginApiFn get_api = resolve_get_api(handle);
   if (get_api == nullptr) {
-    error_message = "missing symbol guinmotion_get_plugin_api";
+    error_message = "缺少符号 guinmotion_get_plugin_api";
     release();
     return false;
   }
 
   GuinMotionPluginApi api{};
   if (get_api(GUINMOTION_SDK_ABI_VERSION, &api) != 0) {
-    error_message = "guinmotion_get_plugin_api rejected host ABI (or invalid plugin)";
+    error_message = "guinmotion_get_plugin_api 拒绝了宿主 ABI（或插件无效）";
     release();
     return false;
   }
 
   if (api.sdk_abi_version != GUINMOTION_SDK_ABI_VERSION) {
-    error_message = "plugin reports incompatible sdk_abi_version " + std::to_string(api.sdk_abi_version) +
-                    " (host expects " + std::to_string(GUINMOTION_SDK_ABI_VERSION) + ")";
+    error_message = "插件报告的 sdk_abi_version " + std::to_string(api.sdk_abi_version) +
+                    " 与宿主不兼容（宿主期望 " + std::to_string(GUINMOTION_SDK_ABI_VERSION) + "）";
     release();
     return false;
   }
 
   if (api.get_plugin_metadata == nullptr || api.get_operator_count == nullptr ||
       api.get_operator_metadata == nullptr) {
-    error_message = "plugin API table contains null function pointers";
+    error_message = "插件 API 表含有空函数指针";
     release();
     return false;
   }
 
   GuinMotionPluginMetadata plugin_meta{};
   if (api.get_plugin_metadata(&plugin_meta) != 0) {
-    error_message = "get_plugin_metadata failed";
+    error_message = "get_plugin_metadata 失败";
     release();
     return false;
   }
 
   if (plugin_meta.sdk_abi_version != GUINMOTION_SDK_ABI_VERSION) {
-    error_message = "plugin metadata sdk_abi_version mismatch";
+    error_message = "插件元数据 sdk_abi_version 不匹配";
     release();
     return false;
   }
@@ -162,7 +162,7 @@ bool DynamicPluginHost::load_plugin_file(const std::filesystem::path& path, Oper
   for (uint64_t i = 0; i < operator_count; ++i) {
     GuinMotionOperatorMetadata op_meta{};
     if (api.get_operator_metadata(i, &op_meta) != 0) {
-      error_message = "get_operator_metadata failed at index " + std::to_string(i);
+      error_message = "get_operator_metadata 在索引 " + std::to_string(i) + " 处失败";
       release();
       return false;
     }
@@ -193,7 +193,7 @@ void DynamicPluginHost::load_plugins_from_directory(const std::filesystem::path&
   std::vector<std::filesystem::path> files;
   for (const auto& entry : std::filesystem::directory_iterator(dir, ec)) {
     if (ec) {
-      error_messages.push_back("directory iteration failed: " + ec.message());
+      error_messages.push_back("目录遍历失败：" + ec.message());
       return;
     }
     if (!entry.is_regular_file()) {
