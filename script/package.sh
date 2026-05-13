@@ -109,6 +109,9 @@ cmake --preset "${PRESET}"
 echo "Building release artifacts"
 cmake --build --preset "${PRESET}"
 
+echo "Running CTest"
+ctest --test-dir "${ROOT_DIR}/build/${PRESET}" --output-on-failure
+
 BUILD_DIR="${ROOT_DIR}/build/${PRESET}"
 
 echo "Creating CPack package"

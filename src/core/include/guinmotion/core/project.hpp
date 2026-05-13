@@ -3,6 +3,7 @@
 #include "guinmotion/core/types.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 
 namespace guinmotion::core {
@@ -29,10 +30,17 @@ class Project {
 
   [[nodiscard]] ProjectSummary summary() const;
 
+  /// Monotonic counter bumped when scene contents affecting visualization or algorithms change.
+  [[nodiscard]] std::uint64_t scene_revision() const noexcept { return scene_revision_; }
+
+  /// Call after mutating `scene()` directly (e.g. importers, editors).
+  void mark_scene_changed() noexcept { ++scene_revision_; }
+
  private:
   std::string id_;
   std::string name_;
   Scene scene_;
+  std::uint64_t scene_revision_{0};
 };
 
 Project make_demo_project();

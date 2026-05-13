@@ -1,5 +1,7 @@
 add_library(guinmotion_core
   src/project.cpp
+  src/io/trajectory_xml.cpp
+  src/io/point_cloud_file.cpp
 )
 
 add_library(GuinMotion::core ALIAS guinmotion_core)
@@ -11,6 +13,10 @@ target_include_directories(guinmotion_core
 )
 
 target_compile_features(guinmotion_core PUBLIC cxx_std_20)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_link_libraries(guinmotion_core PUBLIC stdc++fs)
+endif()
 
 install(TARGETS guinmotion_core
   EXPORT GuinMotionTargets

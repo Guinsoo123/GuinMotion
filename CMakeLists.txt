@@ -8,6 +8,7 @@ project(
 )
 
 option(GUINMOTION_BUILD_EXAMPLES "Build example operator plugins" ON)
+option(GUINMOTION_BUILD_TESTS "Build unit tests" ON)
 option(GUINMOTION_ENABLE_QT "Enable Qt desktop UI target when Qt6 is available" OFF)
 option(GUINMOTION_ENABLE_PYTHON "Enable embedded Python operator runtime placeholders" OFF)
 
@@ -22,12 +23,27 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include(GNUInstallDirs)
 
 add_subdirectory(src/core)
+add_subdirectory(src/app_core)
 add_subdirectory(src/operator_runtime)
 add_subdirectory(src/sdk)
+
+if(GUINMOTION_ENABLE_PYTHON)
+  add_subdirectory(src/python_embed)
+endif()
+
+if(GUINMOTION_ENABLE_QT)
+  add_subdirectory(src/viewport)
+endif()
+
 add_subdirectory(src/app)
 
 if(GUINMOTION_BUILD_EXAMPLES)
   add_subdirectory(src/plugins/examples/minimal_operator)
+endif()
+
+if(GUINMOTION_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
 endif()
 
 install(DIRECTORY resources/ DESTINATION "${CMAKE_INSTALL_DATADIR}/guinmotion/resources")

@@ -1,4 +1,5 @@
 add_library(guinmotion_operator_runtime
+  src/dynamic_plugin_host.cpp
   src/operator_registry.cpp
 )
 
@@ -11,6 +12,10 @@ target_include_directories(guinmotion_operator_runtime
 )
 
 target_compile_features(guinmotion_operator_runtime PUBLIC cxx_std_20)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  target_link_libraries(guinmotion_operator_runtime PRIVATE dl)
+endif()
 
 install(TARGETS guinmotion_operator_runtime
   EXPORT GuinMotionTargets

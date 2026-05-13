@@ -96,6 +96,9 @@ cmake --preset "${PRESET}"
 echo "Building GuinMotion"
 cmake --build --preset "${PRESET}"
 
+echo "Running CTest"
+ctest --test-dir "${ROOT_DIR}/build/${PRESET}" --output-on-failure
+
 APP_PATH="${ROOT_DIR}/build/${PRESET}/bin/GuinMotion"
 
 if [[ ! -x "${APP_PATH}" ]]; then

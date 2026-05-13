@@ -1,3 +1,6 @@
+set(GUINMOTION_LOCAL_PLUGIN_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/plugins")
+file(MAKE_DIRECTORY "${GUINMOTION_LOCAL_PLUGIN_OUTPUT_DIR}")
+
 add_library(guinmotion_minimal_operator MODULE
   minimal_operator.cpp
 )
@@ -15,6 +18,9 @@ target_compile_definitions(guinmotion_minimal_operator
 set_target_properties(guinmotion_minimal_operator PROPERTIES
   PREFIX ""
   OUTPUT_NAME "minimal_operator"
+  LIBRARY_OUTPUT_DIRECTORY "${GUINMOTION_LOCAL_PLUGIN_OUTPUT_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY "${GUINMOTION_LOCAL_PLUGIN_OUTPUT_DIR}"
+  ARCHIVE_OUTPUT_DIRECTORY "${GUINMOTION_LOCAL_PLUGIN_OUTPUT_DIR}"
 )
 
 install(TARGETS guinmotion_minimal_operator

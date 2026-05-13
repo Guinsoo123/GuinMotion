@@ -82,6 +82,7 @@ Project make_demo_project() {
   cloud.positions = {{0.0, 0.0, 0.0}, {0.1, 0.0, 0.0}, {0.0, 0.1, 0.0}};
   project.scene().point_clouds.push_back(cloud);
 
+  project.mark_scene_changed();
   return project;
 }
 

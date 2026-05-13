@@ -77,7 +77,7 @@ Ubuntu 需要当前用户具备 `sudo` 权限，因为脚本会调用 `apt-get` 
 
 可选环境变量：
 
-- `GUINMOTION_PRESET`：例如 `release`、`qt-release`、`headless`（无 Qt，仅命令行输出）。
+- `GUINMOTION_PRESET`：例如 `default`、`release`、`headless`（无 Qt，仅命令行输出）。
 - 无界面机器上安装依赖时可设 `GUINMOTION_SKIP_QT=1`，再用 `GUINMOTION_PRESET=headless ./script/build_and_run.sh` 编译运行。
 
 无界面（`headless`）运行成功时终端会看到类似输出：

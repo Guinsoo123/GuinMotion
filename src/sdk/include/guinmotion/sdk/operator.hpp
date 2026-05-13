@@ -7,6 +7,10 @@
 #include <string>
 #include <vector>
 
+namespace guinmotion::core {
+class Scene;
+}
+
 namespace guinmotion::sdk {
 
 using core::PointCloud;
@@ -33,8 +37,18 @@ class ExecutionContext {
   void request_cancel() noexcept { cancel_requested_ = true; }
   [[nodiscard]] bool cancel_requested() const noexcept { return cancel_requested_; }
 
+  /// Scene under validation / execution (may be null for headless unit tests that inject data later).
+  void set_scene(core::Scene* scene) noexcept { scene_ = scene; }
+  [[nodiscard]] core::Scene* scene() const noexcept { return scene_; }
+
+  /// Empty string means: use the first trajectory in the scene, if any.
+  void set_target_trajectory_id(std::string trajectory_id) { target_trajectory_id_ = std::move(trajectory_id); }
+  [[nodiscard]] const std::string& target_trajectory_id() const noexcept { return target_trajectory_id_; }
+
  private:
   bool cancel_requested_{false};
+  core::Scene* scene_{nullptr};
+  std::string target_trajectory_id_{};
 };
 
 class Operator {

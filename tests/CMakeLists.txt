@@ -1,0 +1,20 @@
+add_executable(guinmotion_io_tests io_import_test.cpp)
+target_link_libraries(guinmotion_io_tests PRIVATE GuinMotion::core)
+target_compile_features(guinmotion_io_tests PRIVATE cxx_std_20)
+
+add_executable(guinmotion_builtin_operator_tests builtin_operator_test.cpp)
+target_link_libraries(guinmotion_builtin_operator_tests PRIVATE GuinMotion::core guinmotion_sdk_builtins)
+target_compile_features(guinmotion_builtin_operator_tests PRIVATE cxx_std_20)
+
+add_executable(guinmotion_viewport_math_tests viewport_placeholder_test.cpp)
+target_link_libraries(guinmotion_viewport_math_tests PRIVATE GuinMotion::core)
+target_include_directories(
+  guinmotion_viewport_math_tests
+  PRIVATE
+    "${CMAKE_SOURCE_DIR}/src/viewport/include"
+)
+target_compile_features(guinmotion_viewport_math_tests PRIVATE cxx_std_20)
+
+add_test(NAME guinmotion_io_import COMMAND $<TARGET_FILE:guinmotion_io_tests>)
+add_test(NAME guinmotion_builtin_operators COMMAND $<TARGET_FILE:guinmotion_builtin_operator_tests>)
+add_test(NAME guinmotion_viewport_placeholder_math COMMAND $<TARGET_FILE:guinmotion_viewport_math_tests>)
