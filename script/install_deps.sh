@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
+# Installs build tools and Qt 6 base by default (desktop GUI). Set GUINMOTION_SKIP_QT=1 to omit Qt only.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Non-empty and not "1" still installs Qt; only GUINMOTION_SKIP_QT=1 skips Qt packages.
+install_qt_packages() {
+  [[ "${GUINMOTION_SKIP_QT:-0}" != "1" ]]
+}
 
 ensure_command() {
   local command_name="$1"
@@ -62,7 +68,7 @@ install_macos() {
   fi
 
   brew update
-  if [[ "${GUINMOTION_SKIP_QT:-0}" == "1" ]]; then
+  if ! install_qt_packages; then
     brew_install_with_retry cmake ninja pkg-config
     echo "GUINMOTION_SKIP_QT=1: skipped Qt. Use CMake preset headless or GUINMOTION_ENABLE_QT=OFF for builds without GUI."
   else
@@ -85,7 +91,7 @@ install_ubuntu() {
     pkg-config
     git
   )
-  if [[ "${GUINMOTION_SKIP_QT:-0}" == "1" ]]; then
+  if ! install_qt_packages; then
     sudo apt-get install -y "${base_pkgs[@]}"
     echo "GUINMOTION_SKIP_QT=1: skipped Qt. Use CMake preset headless or GUINMOTION_ENABLE_QT=OFF for builds without GUI."
   else
@@ -107,6 +113,11 @@ verify_common_tools() {
 main() {
   echo "GuinMotion dependency installer"
   echo "Project: ${ROOT_DIR}"
+  if install_qt_packages; then
+    echo "Qt 6: will be installed (default). To skip Qt on a constrained machine, set GUINMOTION_SKIP_QT=1."
+  else
+    echo "Qt 6: skipped (GUINMOTION_SKIP_QT=1)."
+  fi
 
   case "$(detect_os)" in
     macos) install_macos ;;
@@ -124,13 +135,13 @@ main() {
 
   verify_common_tools
 
-  if [[ "${GUINMOTION_SKIP_QT:-0}" == "1" ]]; then
-    echo "Dependencies installed (headless, no Qt packages)."
+  if install_qt_packages; then
+    echo "Dependencies installed (default: Qt 6 base for the desktop GUI is included)."
   else
-    echo "Dependencies installed (including Qt 6 base for the desktop GUI)."
+    echo "Dependencies installed (headless, no Qt packages)."
   fi
   echo "You can now run: ./script/build_and_run.sh"
-  echo "To skip Qt install on a constrained machine, set GUINMOTION_SKIP_QT=1 before running this script."
+  echo "Default behavior installs Qt. To skip Qt, run: GUINMOTION_SKIP_QT=1 ./script/install_deps.sh"
 }
 
 main "$@"
