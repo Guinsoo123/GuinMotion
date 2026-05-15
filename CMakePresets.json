@@ -11,6 +11,8 @@
       "hidden": true,
       "generator": "Ninja",
       "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/.deps/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "$env{VCPKG_DEFAULT_TRIPLET}",
         "GUINMOTION_BUILD_TESTS": "ON"
       }
     },

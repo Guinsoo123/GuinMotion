@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.22)
 
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(_guinmotion_local_vcpkg_toolchain
+      "${CMAKE_CURRENT_SOURCE_DIR}/.deps/vcpkg/scripts/buildsystems/vcpkg.cmake")
+  if(EXISTS "${_guinmotion_local_vcpkg_toolchain}")
+    set(CMAKE_TOOLCHAIN_FILE "${_guinmotion_local_vcpkg_toolchain}" CACHE FILEPATH
+        "GuinMotion local vcpkg toolchain")
+    message(STATUS "Using local vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+  endif()
+endif()
+
 project(
   GuinMotion
   VERSION 0.1.0
