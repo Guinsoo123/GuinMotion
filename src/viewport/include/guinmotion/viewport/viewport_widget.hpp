@@ -33,6 +33,7 @@ class ViewportWidget final : public QOpenGLWidget, protected QOpenGLFunctions {
   void wheelEvent(QWheelEvent* event) override;
 
  private:
+  void setup_vertex_layout(QOpenGLVertexArrayObject& vao, QOpenGLBuffer& buffer);
   void ensure_program();
   void upload_if_dirty();
   void draw_layers(const QMatrix4x4& mvp);

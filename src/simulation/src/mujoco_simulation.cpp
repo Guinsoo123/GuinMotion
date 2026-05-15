@@ -155,13 +155,17 @@ SimulationResult MujocoSimulationEngine::run_trajectory(
   if (!model_path.empty()) {
     model = mj_loadXML(model_path.string().c_str(), nullptr, error, sizeof(error));
     if (model == nullptr) {
-      result.messages.push_back(message(core::ValidationStatus::Error,
-                                        std::string("MuJoCo 加载模型失败：") + error,
-                                        robot.id));
-      return result;
+      // mj_loadXML expects MJCF; URDF and other formats fail here. Still emit a time-sampled trace
+      // using joint interpolation + tool_pose so downstream evaluation and one-stop tests can run.
+      result.messages.push_back(message(
+          core::ValidationStatus::Warning,
+          std::string("MuJoCo 未加载模型（例如路径为 URDF 而非 MJCF）：") + error +
+              " 将使用关节/末端插值生成 trace。",
+          robot.id));
+    } else {
+      data = mj_makeData(model);
+      result.trace.used_mujoco = data != nullptr;
     }
-    data = mj_makeData(model);
-    result.trace.used_mujoco = data != nullptr;
   }
 #else
   result.messages.push_back(message(core::ValidationStatus::Warning,

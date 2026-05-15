@@ -20,10 +20,11 @@ target_compile_features(guinmotion_simulation PUBLIC cxx_std_20)
 
 if(TARGET mujoco::mujoco)
   target_compile_definitions(guinmotion_simulation PRIVATE GUINMOTION_WITH_MUJOCO=1)
-  target_link_libraries(guinmotion_simulation PRIVATE mujoco::mujoco)
+  # PUBLIC: static lib consumers must link MuJoCo to resolve mj_* from mujoco_simulation.cpp.o.
+  target_link_libraries(guinmotion_simulation PUBLIC mujoco::mujoco)
 elseif(TARGET mujoco)
   target_compile_definitions(guinmotion_simulation PRIVATE GUINMOTION_WITH_MUJOCO=1)
-  target_link_libraries(guinmotion_simulation PRIVATE mujoco)
+  target_link_libraries(guinmotion_simulation PUBLIC mujoco)
 endif()
 
 install(TARGETS guinmotion_simulation

@@ -95,6 +95,24 @@ setup_vcpkg_toolchain() {
   export CMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN_FILE:-${toolchain}}"
   export VCPKG_FEATURE_FLAGS="${VCPKG_FEATURE_FLAGS:-manifests}"
   export VCPKG_DEFAULT_TRIPLET="${VCPKG_DEFAULT_TRIPLET:-$(vcpkg_default_triplet)}"
+  local overlay_triplets="${root_dir}/cmake/vcpkg-triplets"
+  if [[ -d "${overlay_triplets}" ]]; then
+    if [[ -n "${VCPKG_OVERLAY_TRIPLETS:-}" ]]; then
+      export VCPKG_OVERLAY_TRIPLETS="${overlay_triplets};${VCPKG_OVERLAY_TRIPLETS}"
+    else
+      export VCPKG_OVERLAY_TRIPLETS="${overlay_triplets}"
+    fi
+    echo "Using vcpkg overlay triplets: ${overlay_triplets}"
+  fi
+  local overlay_ports="${root_dir}/cmake/vcpkg-ports"
+  if [[ -d "${overlay_ports}" ]]; then
+    if [[ -n "${VCPKG_OVERLAY_PORTS:-}" ]]; then
+      export VCPKG_OVERLAY_PORTS="${overlay_ports};${VCPKG_OVERLAY_PORTS}"
+    else
+      export VCPKG_OVERLAY_PORTS="${overlay_ports}"
+    fi
+    echo "Using vcpkg overlay ports: ${overlay_ports}"
+  fi
   echo "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}"
   echo "Using vcpkg triplet: ${VCPKG_DEFAULT_TRIPLET}"
 }

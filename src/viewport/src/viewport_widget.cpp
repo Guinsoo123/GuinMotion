@@ -116,17 +116,6 @@ void push(std::vector<float>& out, float x, float y, float z) {
   return proj * view;
 }
 
-void setup(QOpenGLVertexArrayObject& vao, QOpenGLBuffer& buffer) {
-  vao.create();
-  buffer.create();
-  vao.bind();
-  buffer.bind();
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-  glEnableVertexAttribArray(0);
-  buffer.release();
-  vao.release();
-}
-
 }  // namespace
 
 ViewportWidget::ViewportWidget(QWidget* parent) : QOpenGLWidget(parent) {
@@ -144,6 +133,17 @@ void ViewportWidget::set_layer_visible(int layer, bool visible) {
 void ViewportWidget::set_playback_time(double seconds) {
   playback_time_seconds_ = std::max(0.0, seconds);
   update();
+}
+
+void ViewportWidget::setup_vertex_layout(QOpenGLVertexArrayObject& vao, QOpenGLBuffer& buffer) {
+  vao.create();
+  buffer.create();
+  vao.bind();
+  buffer.bind();
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+  glEnableVertexAttribArray(0);
+  buffer.release();
+  vao.release();
 }
 
 void ViewportWidget::set_scene(const core::Scene& scene, const std::uint64_t scene_revision) {
@@ -243,13 +243,13 @@ void ViewportWidget::initializeGL() {
   glEnable(GL_PROGRAM_POINT_SIZE);
   ensure_program();
 
-  setup(cloud_vao_, cloud_buffer_);
-  setup(traj_vao_, traj_buffer_);
-  setup(wp_vao_, wp_buffer_);
-  setup(robot_vao_, robot_buffer_);
-  setup(target_vao_, target_buffer_);
-  setup(trace_vao_, trace_buffer_);
-  setup(grid_vao_, grid_buffer_);
+  setup_vertex_layout(cloud_vao_, cloud_buffer_);
+  setup_vertex_layout(traj_vao_, traj_buffer_);
+  setup_vertex_layout(wp_vao_, wp_buffer_);
+  setup_vertex_layout(robot_vao_, robot_buffer_);
+  setup_vertex_layout(target_vao_, target_buffer_);
+  setup_vertex_layout(trace_vao_, trace_buffer_);
+  setup_vertex_layout(grid_vao_, grid_buffer_);
 }
 
 void ViewportWidget::ensure_program() {
