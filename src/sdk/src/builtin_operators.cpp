@@ -2,6 +2,7 @@
 
 #include "guinmotion/sdk/operator.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <sstream>
@@ -11,6 +12,7 @@ namespace {
 
 constexpr const char* kDurationOpId = "guinmotion.trajectory.duration_check";
 constexpr const char* kJointLimitOpId = "guinmotion.joint.limit_check";
+constexpr const char* kTargetDemoOpId = "guinmotion.examples.target_demo_planner";
 
 [[nodiscard]] const core::Trajectory* pick_trajectory(const core::Scene* scene,
                                                         const std::string& trajectory_id) {
@@ -201,6 +203,108 @@ class JointLimitCheckOperator final : public Operator {
   }
 };
 
+class TargetDemoPlannerOperator final : public Operator {
+ public:
+  [[nodiscard]] OperatorMetadata metadata() const override {
+    return OperatorMetadata{
+        .id = kTargetDemoOpId,
+        .name = "目标点演示轨迹生成",
+        .version = "0.1.0",
+        .description = "从导入的目标点集生成一条用于端到端验收的示例关节轨迹。",
+    };
+  }
+
+  ExecutionResult execute(ExecutionContext& context) override {
+    ExecutionResult out;
+    const auto* scene = context.scene();
+    if (scene == nullptr || scene->target_point_sets.empty()) {
+      out.validation_messages.push_back(core::ValidationMessage{
+          .status = core::ValidationStatus::Error,
+          .source = kTargetDemoOpId,
+          .message = "没有可用于生成轨迹的目标点集。",
+      });
+      return out;
+    }
+    const core::TargetPointSet* target_set = nullptr;
+    for (const auto& set : scene->target_point_sets) {
+      if ((context.target_point_set_id().empty() && target_set == nullptr) ||
+          set.id == context.target_point_set_id()) {
+        target_set = &set;
+        if (!context.target_point_set_id().empty()) {
+          break;
+        }
+      }
+    }
+    if (target_set == nullptr) {
+      out.validation_messages.push_back(core::ValidationMessage{
+          .status = core::ValidationStatus::Error,
+          .source = kTargetDemoOpId,
+          .message = "未找到指定目标点集：" + context.target_point_set_id(),
+      });
+      return out;
+    }
+    const auto& targets = *target_set;
+    const core::RobotModel* robot = nullptr;
+    for (const auto& r : scene->robot_models) {
+      if ((!targets.robot_model_id.empty() && r.id == targets.robot_model_id) ||
+          (targets.robot_model_id.empty() && robot == nullptr)) {
+        robot = &r;
+        if (!targets.robot_model_id.empty()) {
+          break;
+        }
+      }
+    }
+    if (robot == nullptr) {
+      out.validation_messages.push_back(core::ValidationMessage{
+          .status = core::ValidationStatus::Error,
+          .source = kTargetDemoOpId,
+          .message = "没有可用于目标点轨迹生成的机器人模型。",
+          .related_object_id = targets.id,
+      });
+      return out;
+    }
+
+    core::Trajectory trajectory;
+    trajectory.id = targets.id + "_demo_trajectory";
+    trajectory.name = targets.name + " 演示轨迹";
+    trajectory.robot_model_id = robot->id;
+    trajectory.interpolation = core::InterpolationMode::LinearJoint;
+    for (std::size_t i = 0; i < targets.targets.size(); ++i) {
+      const auto& target = targets.targets[i];
+      core::Waypoint wp;
+      wp.id = target.id + "_wp";
+      wp.label = target.name;
+      wp.time_seconds = target.time_hint_seconds > 0.0 ? target.time_hint_seconds : static_cast<double>(i);
+      wp.duration_seconds = i == 0 ? 0.0 : 1.0;
+      wp.tool_pose.translation = target.pose.position;
+      for (int q = 0; q < 4; ++q) {
+        wp.tool_pose.rotation[q] = target.pose.orientation[q];
+      }
+      wp.state.robot_model_id = robot->id;
+      wp.state.joint_positions_radians.assign(robot->joints.size(), 0.0);
+      if (!wp.state.joint_positions_radians.empty()) {
+        wp.state.joint_positions_radians[0] = std::atan2(target.pose.position.y, target.pose.position.x);
+      }
+      if (wp.state.joint_positions_radians.size() > 1) {
+        const double planar = std::hypot(target.pose.position.x, target.pose.position.y);
+        wp.state.joint_positions_radians[1] = std::clamp(planar - 0.24, -0.6, 0.6);
+      }
+      if (wp.state.joint_positions_radians.size() > 2) {
+        wp.state.joint_positions_radians[2] = std::clamp(target.pose.position.z, -0.6, 0.6);
+      }
+      trajectory.waypoints.push_back(std::move(wp));
+    }
+    out.trajectories.push_back(std::move(trajectory));
+    out.validation_messages.push_back(core::ValidationMessage{
+        .status = core::ValidationStatus::Valid,
+        .source = kTargetDemoOpId,
+        .message = "已根据目标点生成演示轨迹。",
+        .related_object_id = targets.id,
+    });
+    return out;
+  }
+};
+
 }  // namespace
 
 std::unique_ptr<Operator> make_builtin_operator(const std::string& operator_id) {
@@ -209,6 +313,9 @@ std::unique_ptr<Operator> make_builtin_operator(const std::string& operator_id) 
   }
   if (operator_id == kJointLimitOpId) {
     return std::make_unique<JointLimitCheckOperator>();
+  }
+  if (operator_id == kTargetDemoOpId) {
+    return std::make_unique<TargetDemoPlannerOperator>();
   }
   return nullptr;
 }

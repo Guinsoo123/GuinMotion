@@ -20,6 +20,12 @@ target_link_libraries(guinmotion_viewport
     Qt6::OpenGL
 )
 
+if(TARGET assimp::assimp)
+  target_link_libraries(guinmotion_viewport PRIVATE assimp::assimp)
+elseif(TARGET assimp)
+  target_link_libraries(guinmotion_viewport PRIVATE assimp)
+endif()
+
 target_compile_features(guinmotion_viewport PUBLIC cxx_std_20)
 
 install(TARGETS guinmotion_viewport

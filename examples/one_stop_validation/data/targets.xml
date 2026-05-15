@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<guinmotion_targets id="demo_targets" name="Demo Targets" robot_model_id="demo_validation_robot">
+  <target id="target_1" name="Pick" tolerance="0.03" time_hint_seconds="0">
+    <pose x="0.30" y="0.00" z="0.10" qw="1" qx="0" qy="0" qz="0"/>
+  </target>
+  <target id="target_2" name="Move" tolerance="0.03" time_hint_seconds="1">
+    <pose x="0.22" y="0.18" z="0.12" qw="1" qx="0" qy="0" qz="0"/>
+  </target>
+  <target id="target_3" name="Place" tolerance="0.03" time_hint_seconds="2">
+    <pose x="0.18" y="-0.16" z="0.08" qw="1" qx="0" qy="0" qz="0"/>
+  </target>
+</guinmotion_targets>

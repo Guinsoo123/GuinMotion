@@ -44,14 +44,15 @@ macOS 和 Ubuntu 都优先使用一键脚本：
 - Ubuntu/Debian：使用 `apt-get` 安装依赖。
 - 其它 Linux 发行版：会明确提示暂不支持自动安装，需要手动安装 C++ 编译器、CMake、Ninja 和 `pkg-config`。
 
-该脚本会安装或检查第一阶段默认构建所需依赖：
+该脚本会安装或检查默认构建所需依赖：
 
 - C++ 编译器：macOS 使用 Xcode Command Line Tools，Ubuntu 使用 `build-essential`。
 - CMake。
 - Ninja。
 - `pkg-config`。
-- Ubuntu 额外安装 `git`。
-- **Qt 6 与 OpenGL**：默认安装 `qt6-base-dev`、`qt6-base-dev-tools`、`libgl1-mesa-dev`（Ubuntu）；macOS 通过 Homebrew 安装 `qt`。
+- `git`、`curl`、`zip`、`unzip`、`tar` 等 vcpkg 需要的基础工具。
+- **Qt 6 与 OpenGL**：默认安装 `qt6-base-dev`、`qt6-base-dev-tools`、`libgl1-mesa-dev`（Ubuntu）；macOS 通过 Homebrew 安装 `qtbase`。
+- **MuJoCo / Assimp / tinyxml2**：脚本会在项目本地 `.deps/vcpkg` 克隆/复用 vcpkg，并按 `vcpkg.json` 安装 MuJoCo 仿真、Assimp 网格、tinyxml2 XML 相关依赖。`build_and_run.sh` 会自动使用这个 vcpkg toolchain。
 
 macOS 有两个可能需要手动确认的系统步骤：
 
@@ -73,7 +74,9 @@ Ubuntu 需要当前用户具备 `sudo` 权限，因为脚本会调用 `apt-get` 
 ./script/build_and_run.sh
 ```
 
-`build_and_run.sh` 会识别 macOS / Ubuntu，并在构建前检查 `c++`、`cmake`、`ninja`。在 **macOS** 上会自动把 `brew --prefix qt`（或 `qt@6`）加入 `CMAKE_PREFIX_PATH`，以便 CMake 找到 Qt。
+`build_and_run.sh` 会识别 macOS / Ubuntu，并在构建前检查 `c++`、`cmake`、`ninja`。在 **macOS** 上会自动把 Homebrew Qt 加入 `CMAKE_PREFIX_PATH`，同时自动传入 `.deps/vcpkg/scripts/buildsystems/vcpkg.cmake`，确保 MuJoCo/Assimp/tinyxml2 被 CMake 找到。
+
+构建成功后脚本会先运行 CTest 和 `guinmotion_one_stop_validation`，确认 MuJoCo 仿真/轨迹评价链路通过，再启动 GUI。
 
 可选环境变量：
 
@@ -84,14 +87,24 @@ Ubuntu 需要当前用户具备 `sudo` 权限，因为脚本会调用 `apt-get` 
 
 ```text
 GuinMotion GuinMotion Demo Project
-Robots: 1
-Point clouds: 1
-Trajectories: 1
-Waypoints: 3
-Registered operators: 2
+机器人：1
+点云：1
+轨迹：2
+路点：4
+已注册算子：3
 ```
 
 启用 Qt 时上述统计信息显示在窗口内，而不是终端。
+
+### 2.1 一站式验证示例
+
+构建后可单独运行端到端示例：
+
+```bash
+./build/default/bin/guinmotion_one_stop_validation
+```
+
+示例会导入 `examples/one_stop_validation/data` 中的 URDF、目标点 XML 和点云，运行目标点演示算子、执行仿真 trace，并输出 `evaluation: PASS`。
 
 ### 3. 打包
 

@@ -33,7 +33,11 @@ class MainWindow final : public QMainWindow {
   void update_properties_panel(const QString& text);
   void import_trajectory_xml();
   void import_point_cloud();
+  void import_robot_model();
+  void import_target_points();
   void run_selected_operator();
+  void run_selected_simulation();
+  void evaluate_selected_trajectory();
 
   [[nodiscard]] std::optional<std::string> selected_trajectory_id_from_tree() const;
   [[nodiscard]] std::string trajectory_id_for_operator_run() const;
@@ -47,6 +51,8 @@ class MainWindow final : public QMainWindow {
   QLabel* properties_label_{nullptr};
   QListWidget* operator_list_{nullptr};
   QPushButton* run_operator_button_{nullptr};
+  QPushButton* run_simulation_button_{nullptr};
+  QPushButton* evaluate_trajectory_button_{nullptr};
   viewport::ViewportWidget* viewport_{nullptr};
 };
 

@@ -55,6 +55,14 @@ void register_builtin_operators_impl(operator_runtime::OperatorRegistry& registr
           .version = "0.1.0",
           .description = "根据机器人模型关节上下限校验关节角（弧度）。",
       });
+  registry.register_operator(
+      plugin,
+      operator_runtime::OperatorMetadata{
+          .id = "guinmotion.examples.target_demo_planner",
+          .name = "目标点演示轨迹生成",
+          .version = "0.1.0",
+          .description = "从目标点集生成端到端验收用演示轨迹。",
+      });
 }
 
 [[nodiscard]] QString format_validation_row(const guinmotion::core::ValidationMessage& message) {
@@ -121,11 +129,17 @@ MainWindow::MainWindow() : service_(core::make_demo_project()) {
   op_layout->addWidget(operator_list_, 1);
   run_operator_button_ = new QPushButton(QStringLiteral("对所选轨迹运行算子"), op_panel);
   op_layout->addWidget(run_operator_button_);
+  run_simulation_button_ = new QPushButton(QStringLiteral("执行所选轨迹仿真"), op_panel);
+  op_layout->addWidget(run_simulation_button_);
+  evaluate_trajectory_button_ = new QPushButton(QStringLiteral("评价所选轨迹"), op_panel);
+  op_layout->addWidget(evaluate_trajectory_button_);
   auto* op_dock = new QDockWidget(QStringLiteral("算子"), this);
   op_dock->setWidget(op_panel);
   addDockWidget(Qt::BottomDockWidgetArea, op_dock);
 
   connect(run_operator_button_, &QPushButton::clicked, this, &MainWindow::run_selected_operator);
+  connect(run_simulation_button_, &QPushButton::clicked, this, &MainWindow::run_selected_simulation);
+  connect(evaluate_trajectory_button_, &QPushButton::clicked, this, &MainWindow::evaluate_selected_trajectory);
 
   load_external_plugins();
 
@@ -136,6 +150,12 @@ MainWindow::MainWindow() : service_(core::make_demo_project()) {
   auto* import_cloud = new QAction(QStringLiteral("导入点云(&C)…"), this);
   connect(import_cloud, &QAction::triggered, this, &MainWindow::import_point_cloud);
   file_menu->addAction(import_cloud);
+  auto* import_robot = new QAction(QStringLiteral("导入机器人 URDF/MJCF(&R)…"), this);
+  connect(import_robot, &QAction::triggered, this, &MainWindow::import_robot_model);
+  file_menu->addAction(import_robot);
+  auto* import_targets = new QAction(QStringLiteral("导入目标点 XML(&T)…"), this);
+  connect(import_targets, &QAction::triggered, this, &MainWindow::import_target_points);
+  file_menu->addAction(import_targets);
 
   connect(tree_view_, &QTreeView::clicked, this, [this](const QModelIndex& index) {
     if (!index.isValid()) {
@@ -248,6 +268,16 @@ void MainWindow::rebuild_scene_tree() {
   }
   tree_model_->appendRow(clouds);
 
+  auto* targets = new QStandardItem(QStringLiteral("目标点"));
+  targets->setEditable(false);
+  for (const auto& set : scene.target_point_sets) {
+    auto* row = new QStandardItem(QString::fromStdString(set.id + " — " + set.name + "（" +
+                                                         std::to_string(set.targets.size()) + " 点）"));
+    row->setEditable(false);
+    targets->appendRow(row);
+  }
+  tree_model_->appendRow(targets);
+
   auto* trajs = new QStandardItem(QStringLiteral("轨迹"));
   trajs->setEditable(false);
   for (const auto& t : scene.trajectories) {
@@ -259,6 +289,26 @@ void MainWindow::rebuild_scene_tree() {
     trajs->appendRow(row);
   }
   tree_model_->appendRow(trajs);
+
+  auto* sims = new QStandardItem(QStringLiteral("仿真 Trace"));
+  sims->setEditable(false);
+  for (const auto& trace : scene.simulation_traces) {
+    auto* row = new QStandardItem(QString::fromStdString(trace.id + " — " +
+                                                         std::to_string(trace.samples.size()) + " 样本"));
+    row->setEditable(false);
+    sims->appendRow(row);
+  }
+  tree_model_->appendRow(sims);
+
+  auto* evals = new QStandardItem(QStringLiteral("评价"));
+  evals->setEditable(false);
+  for (const auto& evaluation : scene.trajectory_evaluations) {
+    auto* row = new QStandardItem(QString::fromStdString(
+        evaluation.id + " — 最大误差 " + std::to_string(evaluation.max_position_error_m) + " m"));
+    row->setEditable(false);
+    evals->appendRow(row);
+  }
+  tree_model_->appendRow(evals);
 
   auto* val = new QStandardItem(QStringLiteral("校验"));
   val->setEditable(false);
@@ -324,6 +374,50 @@ void MainWindow::import_point_cloud() {
       8000);
 }
 
+void MainWindow::import_robot_model() {
+  const QString path = QFileDialog::getOpenFileName(
+      this,
+      QStringLiteral("导入机器人模型"),
+      {},
+      QStringLiteral("机器人模型 (*.urdf *.xml *.mjcf);;所有文件 (*)"));
+  if (path.isEmpty()) {
+    return;
+  }
+  const auto result = service_.import_robot_model_urdf_file(path.toStdString());
+  if (!result.ok) {
+    statusBar()->showMessage(QString::fromStdString(result.message), 8000);
+    QMessageBox::warning(this, QStringLiteral("导入失败"), QString::fromStdString(result.message));
+    return;
+  }
+  rebuild_scene_tree();
+  statusBar()->showMessage(
+      QStringLiteral("已导入机器人模型 | 场景版本：%1")
+          .arg(service_.project().scene_revision()),
+      8000);
+}
+
+void MainWindow::import_target_points() {
+  const QString path = QFileDialog::getOpenFileName(
+      this,
+      QStringLiteral("导入目标点 XML"),
+      {},
+      QStringLiteral("XML 文件 (*.xml);;所有文件 (*)"));
+  if (path.isEmpty()) {
+    return;
+  }
+  const auto result = service_.import_target_points_xml_file(path.toStdString());
+  if (!result.ok) {
+    statusBar()->showMessage(QString::fromStdString(result.message), 8000);
+    QMessageBox::warning(this, QStringLiteral("导入失败"), QString::fromStdString(result.message));
+    return;
+  }
+  rebuild_scene_tree();
+  statusBar()->showMessage(
+      QStringLiteral("已导入目标点 | 场景版本：%1")
+          .arg(service_.project().scene_revision()),
+      8000);
+}
+
 std::optional<std::string> MainWindow::selected_trajectory_id_from_tree() const {
   for (QModelIndex idx = tree_view_->currentIndex(); idx.isValid(); idx = idx.parent()) {
     QStandardItem* item = tree_model_->itemFromIndex(idx);
@@ -379,6 +473,37 @@ void MainWindow::run_selected_operator() {
   statusBar()->showMessage(QStringLiteral("已在轨迹 %2 上运行算子 %1 | 场景版本 %3")
                                .arg(op_id)
                                .arg(QString::fromStdString(trajectory_id))
+                               .arg(service_.project().scene_revision()),
+                           8000);
+}
+
+void MainWindow::run_selected_simulation() {
+  const std::string trajectory_id = trajectory_id_for_operator_run();
+  if (trajectory_id.empty()) {
+    QMessageBox::information(this, QStringLiteral("仿真"),
+                             QStringLiteral("请先添加或导入一条轨迹。"));
+    return;
+  }
+  const auto trace = service_.run_simulation(trajectory_id);
+  rebuild_scene_tree();
+  statusBar()->showMessage(QStringLiteral("已执行轨迹仿真：%1（%2 样本） | 场景版本 %3")
+                               .arg(QString::fromStdString(trajectory_id))
+                               .arg(trace.samples.size())
+                               .arg(service_.project().scene_revision()),
+                           8000);
+}
+
+void MainWindow::evaluate_selected_trajectory() {
+  const std::string trajectory_id = trajectory_id_for_operator_run();
+  if (trajectory_id.empty()) {
+    QMessageBox::information(this, QStringLiteral("评价"),
+                             QStringLiteral("请先添加或导入一条轨迹。"));
+    return;
+  }
+  const auto evaluation = service_.evaluate_trajectory(trajectory_id, {});
+  rebuild_scene_tree();
+  statusBar()->showMessage(QStringLiteral("轨迹评价完成：最大误差 %1 m | 场景版本 %2")
+                               .arg(evaluation.max_position_error_m)
                                .arg(service_.project().scene_revision()),
                            8000);
 }

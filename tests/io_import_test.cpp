@@ -1,4 +1,6 @@
 #include "guinmotion/core/io/point_cloud_file.hpp"
+#include "guinmotion/core/io/robot_model_urdf.hpp"
+#include "guinmotion/core/io/target_points_xml.hpp"
 #include "guinmotion/core/io/trajectory_xml.hpp"
 #include "guinmotion/core/types.hpp"
 
@@ -99,6 +101,43 @@ end_header
   auto no_scene = import_trajectory_xml(kXmlOk, {});
   CHECK(no_scene.ok);
   CHECK(no_scene.trajectory->waypoints[0].state.joint_positions_radians.size() == 4);
+
+  const char* kTargets = R"(
+<guinmotion_targets id="targets" name="Targets" robot_model_id="r1">
+  <target id="p1" tolerance="0.02" time_hint_seconds="1">
+    <pose x="0.1" y="0.2" z="0.3" qw="1" qx="0" qy="0" qz="0"/>
+  </target>
+</guinmotion_targets>
+)";
+  auto targets = guinmotion::core::io::import_target_points_xml(kTargets);
+  CHECK(targets.ok);
+  CHECK(targets.target_point_set->targets.size() == 1);
+  CHECK(targets.target_point_set->targets.front().pose.position.y == 0.2);
+
+  const char* kUrdf = R"(
+<robot name="r1">
+  <material name="blue"><color rgba="0 0 1 1"/></material>
+  <link name="base"/>
+  <link name="tool">
+    <visual>
+      <origin xyz="0.1 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/tool.obj"/></geometry>
+      <material name="blue"/>
+    </visual>
+  </link>
+  <joint name="j1" type="revolute">
+    <parent link="base"/><child link="tool"/>
+    <origin xyz="0.2 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1" upper="1" velocity="1"/>
+  </joint>
+</robot>
+)";
+  auto urdf = guinmotion::core::io::import_robot_model_urdf(kUrdf);
+  CHECK(urdf.ok);
+  CHECK(urdf.robot_model->links.size() == 2);
+  CHECK(urdf.robot_model->joints.size() == 1);
+  CHECK(urdf.robot_model->links[1].visuals.front().mesh_uri == "meshes/tool.obj");
 
   return g_failures == 0 ? 0 : 1;
 }

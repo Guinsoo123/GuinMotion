@@ -2,6 +2,8 @@ add_library(guinmotion_core
   src/project.cpp
   src/io/trajectory_xml.cpp
   src/io/point_cloud_file.cpp
+  src/io/robot_model_urdf.cpp
+  src/io/target_points_xml.cpp
 )
 
 add_library(GuinMotion::core ALIAS guinmotion_core)

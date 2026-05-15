@@ -2,8 +2,12 @@
   "name": "guinmotion",
   "version-string": "0.1.0",
   "description": "Cross-platform robot motion-control algorithm development and visualization workbench.",
-  "builtin-baseline": "3426db05b996481ca31e95fff3734cf23e0f51bc",
-  "dependencies": [],
+  "builtin-baseline": "dc167728caf2dc076a3d013a8b66356354adb3f3",
+  "dependencies": [
+    "mujoco",
+    "tinyxml2",
+    "assimp"
+  ],
   "features": {
     "qt": {
       "description": "Enable Qt 6 Widgets desktop UI dependencies.",

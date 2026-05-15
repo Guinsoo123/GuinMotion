@@ -19,6 +19,8 @@ struct ImportResult {
   std::string message;
   std::optional<Trajectory> trajectory;
   std::optional<PointCloud> point_cloud;
+  std::optional<RobotModel> robot_model;
+  std::optional<TargetPointSet> target_point_set;
 };
 
 }  // namespace guinmotion::core::io

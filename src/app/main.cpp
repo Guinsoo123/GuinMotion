@@ -40,6 +40,14 @@ void register_builtin_operators(guinmotion::operator_runtime::OperatorRegistry& 
           .version = "0.1.0",
           .description = "根据机器人模型关节上下限校验关节角（弧度）。",
       });
+  registry.register_operator(
+      plugin,
+      guinmotion::operator_runtime::OperatorMetadata{
+          .id = "guinmotion.examples.target_demo_planner",
+          .name = "目标点演示轨迹生成",
+          .version = "0.1.0",
+          .description = "从目标点生成端到端验收用演示轨迹。",
+      });
 }
 
 std::string build_summary_text() {

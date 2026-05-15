@@ -1,4 +1,7 @@
 build/
+.deps/
+# vcpkg manifest output: static libs and dylibs (often >100MB); regenerate with ./script/install_deps.sh
+vcpkg_installed/
 .DS_Store
 *.user
 *.swp

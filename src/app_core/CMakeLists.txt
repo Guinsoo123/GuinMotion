@@ -13,6 +13,7 @@ target_include_directories(guinmotion_app_core
 target_link_libraries(guinmotion_app_core
   PUBLIC
     GuinMotion::core
+    GuinMotion::simulation
     GuinMotion::sdk
     guinmotion_sdk_builtins
 )

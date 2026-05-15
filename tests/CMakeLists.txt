@@ -15,6 +15,11 @@ target_include_directories(
 )
 target_compile_features(guinmotion_viewport_math_tests PRIVATE cxx_std_20)
 
+add_executable(guinmotion_simulation_evaluation_tests simulation_evaluation_test.cpp)
+target_link_libraries(guinmotion_simulation_evaluation_tests PRIVATE GuinMotion::core GuinMotion::simulation)
+target_compile_features(guinmotion_simulation_evaluation_tests PRIVATE cxx_std_20)
+
 add_test(NAME guinmotion_io_import COMMAND $<TARGET_FILE:guinmotion_io_tests>)
 add_test(NAME guinmotion_builtin_operators COMMAND $<TARGET_FILE:guinmotion_builtin_operator_tests>)
 add_test(NAME guinmotion_viewport_placeholder_math COMMAND $<TARGET_FILE:guinmotion_viewport_math_tests>)
+add_test(NAME guinmotion_simulation_evaluation COMMAND $<TARGET_FILE:guinmotion_simulation_evaluation_tests>)

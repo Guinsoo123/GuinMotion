@@ -45,10 +45,17 @@ class ExecutionContext {
   void set_target_trajectory_id(std::string trajectory_id) { target_trajectory_id_ = std::move(trajectory_id); }
   [[nodiscard]] const std::string& target_trajectory_id() const noexcept { return target_trajectory_id_; }
 
+  /// Empty string means: use the first target point set in the scene, if any.
+  void set_target_point_set_id(std::string target_point_set_id) {
+    target_point_set_id_ = std::move(target_point_set_id);
+  }
+  [[nodiscard]] const std::string& target_point_set_id() const noexcept { return target_point_set_id_; }
+
  private:
   bool cancel_requested_{false};
   core::Scene* scene_{nullptr};
   std::string target_trajectory_id_{};
+  std::string target_point_set_id_{};
 };
 
 class Operator {

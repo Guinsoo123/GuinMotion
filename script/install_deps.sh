@@ -1,23 +1,13 @@
 #!/usr/bin/env bash
-# Installs build tools and Qt 6 base by default (desktop GUI). Set GUINMOTION_SKIP_QT=1 to omit Qt only.
+# Installs system build tools/Qt and bootstraps vcpkg for MuJoCo/Assimp/tinyxml2.
+# Set GUINMOTION_SKIP_QT=1 to omit Qt only.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${ROOT_DIR}/script/env_common.sh"
 
-# Non-empty and not "1" still installs Qt; only GUINMOTION_SKIP_QT=1 skips Qt packages.
 install_qt_packages() {
   [[ "${GUINMOTION_SKIP_QT:-0}" != "1" ]]
-}
-
-ensure_command() {
-  local command_name="$1"
-  local hint="$2"
-
-  if ! command -v "${command_name}" >/dev/null 2>&1; then
-    echo "Missing required command: ${command_name}"
-    echo "${hint}"
-    exit 1
-  fi
 }
 
 brew_install_with_retry() {
@@ -30,7 +20,7 @@ brew_install_with_retry() {
       return 0
     fi
     echo "brew install failed (attempt ${attempt}/${max_attempts})."
-    echo "If you see curl (35) or ghcr.io errors, check network, VPN, proxy, or try a Homebrew mirror, then rerun."
+    echo "If you see curl/ghcr.io errors, check network, VPN, proxy, or try a mirror, then rerun."
     if [[ "${attempt}" -lt "${max_attempts}" ]]; then
       echo "Retrying in ${delay_seconds}s..."
       sleep "${delay_seconds}"
@@ -38,20 +28,6 @@ brew_install_with_retry() {
     attempt=$((attempt + 1))
   done
   return 1
-}
-
-detect_os() {
-  case "$(uname -s)" in
-    Darwin) echo "macos" ;;
-    Linux)
-      if [[ -r /etc/os-release ]] && grep -qiE 'ubuntu|debian' /etc/os-release; then
-        echo "ubuntu"
-      else
-        echo "linux"
-      fi
-      ;;
-    *) echo "unsupported" ;;
-  esac
 }
 
 install_macos() {
@@ -68,12 +44,12 @@ install_macos() {
   fi
 
   brew update
-  if ! install_qt_packages; then
-    brew_install_with_retry cmake ninja pkg-config
-    echo "GUINMOTION_SKIP_QT=1: skipped Qt. Use CMake preset headless or GUINMOTION_ENABLE_QT=OFF for builds without GUI."
+  # macOS ships tar with CLT; Homebrew has no "tar" formula (use gnu-tar only if GNU tar is required).
+  if install_qt_packages; then
+    brew_install_with_retry cmake ninja pkg-config git curl zip unzip qtbase
   else
-    # Use qtbase only: enough for Qt6::Widgets and avoids pulling qtwebengine and other huge modules.
-    brew_install_with_retry cmake ninja pkg-config qtbase
+    brew_install_with_retry cmake ninja pkg-config git curl zip unzip
+    echo "GUINMOTION_SKIP_QT=1: skipped Qt. Use GUINMOTION_PRESET=headless for builds without GUI."
   fi
 }
 
@@ -90,58 +66,97 @@ install_ubuntu() {
     ninja-build
     pkg-config
     git
+    curl
+    zip
+    unzip
+    tar
+    autoconf
+    automake
+    autoconf-archive
+    libtool
   )
-  if ! install_qt_packages; then
-    sudo apt-get install -y "${base_pkgs[@]}"
-    echo "GUINMOTION_SKIP_QT=1: skipped Qt. Use CMake preset headless or GUINMOTION_ENABLE_QT=OFF for builds without GUI."
-  else
+  if install_qt_packages; then
     sudo apt-get install -y "${base_pkgs[@]}" qt6-base-dev qt6-base-dev-tools libgl1-mesa-dev
+  else
+    sudo apt-get install -y "${base_pkgs[@]}"
+    echo "GUINMOTION_SKIP_QT=1: skipped Qt. Use GUINMOTION_PRESET=headless for builds without GUI."
   fi
 }
 
-verify_common_tools() {
-  ensure_command c++ "Install a C++ compiler. On macOS run xcode-select --install; on Ubuntu install build-essential."
-  ensure_command cmake "Install CMake or rerun this script."
+vcpkg_triplet() {
+  case "$(uname -s)" in
+    Darwin)
+      case "$(uname -m)" in
+        arm64) echo "arm64-osx" ;;
+        *) echo "x64-osx" ;;
+      esac
+      ;;
+    Linux) echo "x64-linux" ;;
+    *) echo "" ;;
+  esac
+}
 
-  if ! command -v ninja >/dev/null 2>&1 && ! command -v ninja-build >/dev/null 2>&1; then
-    echo "Missing required command: ninja"
-    echo "Install Ninja or rerun this script."
+bootstrap_vcpkg() {
+  local vcpkg_root
+  vcpkg_root="$(resolve_vcpkg_root "${ROOT_DIR}")"
+
+  if [[ ! -d "${vcpkg_root}/.git" ]]; then
+    echo "Cloning vcpkg into: ${vcpkg_root}"
+    mkdir -p "$(dirname "${vcpkg_root}")"
+    git clone https://github.com/microsoft/vcpkg.git "${vcpkg_root}"
+  else
+    echo "Using existing vcpkg checkout: ${vcpkg_root}"
+  fi
+
+  if [[ ! -x "${vcpkg_root}/vcpkg" ]]; then
+    echo "Bootstrapping vcpkg"
+    "${vcpkg_root}/bootstrap-vcpkg.sh" -disableMetrics
+  fi
+}
+
+install_vcpkg_manifest_deps() {
+  local vcpkg_root
+  vcpkg_root="$(resolve_vcpkg_root "${ROOT_DIR}")"
+  local triplet
+  triplet="${VCPKG_DEFAULT_TRIPLET:-$(vcpkg_triplet)}"
+  if [[ -z "${triplet}" ]]; then
+    echo "Could not infer vcpkg triplet. Set VCPKG_DEFAULT_TRIPLET manually."
     exit 1
   fi
+
+  echo "Installing vcpkg manifest dependencies for triplet: ${triplet}"
+  echo "This installs MuJoCo, Assimp and tinyxml2 from vcpkg.json."
+  export VCPKG_FEATURE_FLAGS="${VCPKG_FEATURE_FLAGS:-manifests}"
+  (cd "${ROOT_DIR}" && "${vcpkg_root}/vcpkg" install --triplet "${triplet}" --clean-after-build)
 }
 
 main() {
   echo "GuinMotion dependency installer"
   echo "Project: ${ROOT_DIR}"
   if install_qt_packages; then
-    echo "Qt 6: will be installed (default). To skip Qt on a constrained machine, set GUINMOTION_SKIP_QT=1."
+    echo "Qt 6: will be installed (default). To skip Qt, set GUINMOTION_SKIP_QT=1."
   else
     echo "Qt 6: skipped (GUINMOTION_SKIP_QT=1)."
   fi
 
-  case "$(detect_os)" in
+  local os_name
+  os_name="$(detect_os)"
+  verify_supported_os "${os_name}"
+  case "${os_name}" in
     macos) install_macos ;;
     ubuntu) install_ubuntu ;;
-    linux)
-      echo "Unsupported Linux distribution. This script currently installs packages for Ubuntu/Debian apt-get environments."
-      echo "Install these manually: C++ compiler, cmake, ninja, pkg-config."
-      exit 1
-      ;;
-    unsupported)
-      echo "Unsupported OS: $(uname -s)"
-      exit 1
-      ;;
   esac
 
-  verify_common_tools
+  verify_build_tools
+  ensure_command git "Install git or rerun this script."
+  ensure_command curl "Install curl or rerun this script."
 
-  if install_qt_packages; then
-    echo "Dependencies installed (default: Qt 6 base for the desktop GUI is included)."
-  else
-    echo "Dependencies installed (headless, no Qt packages)."
-  fi
+  bootstrap_vcpkg
+  install_vcpkg_manifest_deps
+
+  echo "Dependencies installed."
   echo "You can now run: ./script/build_and_run.sh"
-  echo "Default behavior installs Qt. To skip Qt, run: GUINMOTION_SKIP_QT=1 ./script/install_deps.sh"
+  echo "For CLI-only environments: GUINMOTION_PRESET=headless ./script/build_and_run.sh"
 }
 
 main "$@"
