@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, master]
   pull_request:
@@ -21,19 +22,16 @@ jobs:
           - os: macos-latest
             preset: headless
     runs-on: ${{ matrix.os }}
+    env:
+      GUINMOTION_PRESET: ${{ matrix.preset }}
+      GUINMOTION_SKIP_QT: "1"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install build tools (Ubuntu)
-        if: runner.os == 'Linux'
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build pkg-config
+          ./script/install_deps.sh
 
-      - name: Configure and build
+      - name: Configure, build, and test
         run: |
-          cmake --preset "${{ matrix.preset }}"
-          cmake --build --preset "${{ matrix.preset }}"
-
-      - name: CTest
-        run: ctest --test-dir "${{ github.workspace }}/build/${{ matrix.preset }}" --output-on-failure
+          ./script/ci_build.sh
